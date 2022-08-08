@@ -4,9 +4,9 @@ require("@nomicfoundation/hardhat-toolbox");
 module.exports = {
   solidity: "0.8.9",
   networks: {
-    ropsten: {
-      url: "https://ethereum-ropsten-rpc.allthatnode.com/",
-      accounts: [process.env.PRIVATE_KEY_ROPSTEN]
-    }
+    // ropsten: {
+    //   url: "https://ethereum-ropsten-rpc.allthatnode.com/",
+    //   accounts: [process.env.PRIVATE_KEY_ROPSTEN]
+    // }
   }
 };
