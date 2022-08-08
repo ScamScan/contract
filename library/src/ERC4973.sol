@@ -27,7 +27,7 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
 
   mapping(uint256 => address) private _owners;
   mapping(uint256 => string) private _tokenURIs;
-  mapping(address => uint256) private _balances;
+  mapping(address => int256) private _balances;
 
   constructor(
     string memory name_,
@@ -65,7 +65,7 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
     // _burn(tokenId);
   }
 
-  function balanceOf(address owner) public view virtual override returns (uint256) {
+  function balanceOf(address owner) public view virtual override returns (int256) {
     require(owner != address(0), "balanceOf: address zero is not a valid owner");
     return _balances[owner];
   }
@@ -80,13 +80,14 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
   function give(
     address from,
     address to,
+    int256 amount,
     string calldata uri,
     bytes calldata signature
   ) external virtual returns (uint256) {
     require(msg.sender != to, "give: cannot give from self");
     uint256 tokenId = _safeCheckAgreement(from, to, uri, signature);
     // uint256 tokenId = _safeCheckAgreement(msg.sender, to, uri, signature);
-    _mint(from, to, tokenId, uri);
+    _mint(from, to, amount, tokenId, uri);
     _usedHashes.set(tokenId);
     return tokenId;
   }
@@ -144,11 +145,12 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
   function _mint(
     address from,
     address to,
+    int256 amount,
     uint256 tokenId,
     string memory uri
   ) internal virtual returns (uint256) {
     require(!_exists(tokenId), "mint: tokenID exists");
-    _balances[to] += 1;
+    _balances[to] += amount;
     _owners[tokenId] = to;
     _tokenURIs[tokenId] = uri;
     _totalSupply += 1;

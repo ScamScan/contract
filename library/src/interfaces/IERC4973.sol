@@ -18,7 +18,7 @@ interface IERC4973 {
   ///  function throws for queries about the zero address.
   /// @param owner An address for whom to query the balance
   /// @return The number of ABTs owned by `address owner`, possibly zero
-  function balanceOf(address owner) external view returns (uint256);
+  function balanceOf(address owner) external view returns (int256);
   /// @notice Find the address bound to an ERC4973 account-bound token
   /// @dev ABTs assigned to zero address are considered invalid, and queries
   ///  about them do throw.
@@ -58,6 +58,7 @@ interface IERC4973 {
   function give(
     address from,
     address to,
+    int256 amount,
     string calldata uri,
     bytes calldata signature
   ) external returns (uint256);
