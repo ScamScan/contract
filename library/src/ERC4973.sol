@@ -9,6 +9,7 @@ import {ERC165} from "./ERC165.sol";
 
 import {IERC721Metadata} from "./interfaces/IERC721Metadata.sol";
 import {IERC4973} from "./interfaces/IERC4973.sol";
+import {ReputationInfo} from "./ReputationInfo.sol";
 
 bytes32 constant AGREEMENT_HASH =
   keccak256(
@@ -26,7 +27,7 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
   uint256 private _totalSupply;
 
   mapping(uint256 => address) private _owners;
-  mapping(uint256 => string) private _tokenURIs;
+  mapping(uint256 => ReputationInfo) private _tokenURIs;
   mapping(address => int256) private _balances;
 
   constructor(
@@ -53,7 +54,7 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
     return _symbol;
   }
 
-  function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
+  function tokenURI(uint256 tokenId) public view virtual override returns (ReputationInfo memory) {
     require(_exists(tokenId), "tokenURI: token doesn't exist");
     return _tokenURIs[tokenId];
   }
@@ -152,7 +153,7 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
     require(!_exists(tokenId), "mint: tokenID exists");
     _balances[to] += amount;
     _owners[tokenId] = to;
-    _tokenURIs[tokenId] = uri;
+    _tokenURIs[tokenId] = ReputationInfo("Reason", uri);
     _totalSupply += 1;
     emit Transfer(from, to, tokenId);
     return tokenId;
