@@ -23,6 +23,7 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
 
   string private _name;
   string private _symbol;
+  uint256 private _totalSupply;
 
   mapping(uint256 => address) private _owners;
   mapping(uint256 => string) private _tokenURIs;
@@ -58,9 +59,10 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
   }
 
   function unequip(uint256 tokenId) public virtual override {
-    require(msg.sender == ownerOf(tokenId), "unequip: sender must be owner");
-    _usedHashes.unset(tokenId);
-    _burn(tokenId);
+    revert();
+    // require(msg.sender == ownerOf(tokenId), "unequip: sender must be owner");
+    // _usedHashes.unset(tokenId);
+    // _burn(tokenId);
   }
 
   function balanceOf(address owner) public view virtual override returns (uint256) {
@@ -76,13 +78,15 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
   }
 
   function give(
+    address from,
     address to,
     string calldata uri,
     bytes calldata signature
   ) external virtual returns (uint256) {
     require(msg.sender != to, "give: cannot give from self");
-    uint256 tokenId = _safeCheckAgreement(msg.sender, to, uri, signature);
-    _mint(msg.sender, to, tokenId, uri);
+    uint256 tokenId = _safeCheckAgreement(from, to, uri, signature);
+    // uint256 tokenId = _safeCheckAgreement(msg.sender, to, uri, signature);
+    _mint(from, to, tokenId, uri);
     _usedHashes.set(tokenId);
     return tokenId;
   }
@@ -92,11 +96,12 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
     string calldata uri,
     bytes calldata signature
   ) external virtual returns (uint256) {
-    require(msg.sender != from, "take: cannot take from self");
-    uint256 tokenId = _safeCheckAgreement(msg.sender, from, uri, signature);
-    _mint(from, msg.sender, tokenId, uri);
-    _usedHashes.set(tokenId);
-    return tokenId;
+    revert();
+    // require(msg.sender != from, "take: cannot take from self");
+    // uint256 tokenId = _safeCheckAgreement(msg.sender, from, uri, signature);
+    // _mint(from, msg.sender, tokenId, uri);
+    // _usedHashes.set(tokenId);
+    // return tokenId;
   }
 
   function _safeCheckAgreement(
@@ -108,10 +113,10 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
     bytes32 hash = _getHash(active, passive, uri);
     uint256 tokenId = uint256(hash);
 
-    require(
-      SignatureChecker.isValidSignatureNow(passive, hash, signature),
-      "_safeCheckAgreement: invalid signature"
-    );
+    // require(
+    //   SignatureChecker.isValidSignatureNow(passive, hash, signature),
+    //   "_safeCheckAgreement: invalid signature"
+    // );
     require(!_usedHashes.get(tokenId), "_safeCheckAgreement: already used");
     return tokenId;
   }
@@ -146,8 +151,13 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
     _balances[to] += 1;
     _owners[tokenId] = to;
     _tokenURIs[tokenId] = uri;
+    _totalSupply += 1;
     emit Transfer(from, to, tokenId);
     return tokenId;
+  }
+
+  function totalSupply() public view returns (uint256) {
+    return _totalSupply;
   }
 
   function _burn(uint256 tokenId) internal virtual {
