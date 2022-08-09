@@ -11,3 +11,6 @@ artifacts
 
 #gitmessage
 .gitmessage.txt
+
+abi
+rpc-interaction

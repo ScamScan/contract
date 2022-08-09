@@ -19,14 +19,14 @@ bytes32 constant AGREEMENT_HASH =
 /// @author Tim Daubenschütz, Rahul Rumalla (https://github.com/rugpullindex/ERC4973/blob/master/src/ERC4973.sol)
 abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
   using BitMaps for BitMaps.BitMap;
-  BitMaps.BitMap private _usedHashes;
+  BitMaps.BitMap internal _usedHashes;  // modified
 
   string private _name;
   string private _symbol;
 
-  mapping(uint256 => address) private _owners;
-  mapping(uint256 => string) private _tokenURIs;
-  mapping(address => uint256) private _balances;
+  mapping(uint256 => address) private _owners;  // tokenID to owner address
+  mapping(uint256 => string) private _tokenURIs;  // tokenID to token URI
+  mapping(address => uint256) private _balances;  // address to token balance
 
   constructor(
     string memory name_,
@@ -81,9 +81,9 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
     bytes calldata signature
   ) external virtual returns (uint256) {
     require(msg.sender != to, "give: cannot give from self");
-    uint256 tokenId = _safeCheckAgreement(msg.sender, to, uri, signature);
+    uint256 tokenId = _safeCheckAgreement(msg.sender, to, uri, signature);  // get tokenId (uint256)
     _mint(msg.sender, to, tokenId, uri);
-    _usedHashes.set(tokenId);
+    _usedHashes.set(tokenId);  // tokenId 기록
     return tokenId;
   }
 
@@ -99,9 +99,10 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
     return tokenId;
   }
 
+  // sender, recipient의 주소와 토큰 uri의 keccak 해싱 결과를 uint256으로 형 변환한 것이 tokenId
   function _safeCheckAgreement(
-    address active,
-    address passive,
+    address active,  // msg.sender
+    address passive,  // to(give일 경우)
     string calldata uri,
     bytes calldata signature
   ) internal virtual returns (uint256) {
@@ -109,7 +110,7 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
     uint256 tokenId = uint256(hash);
 
     require(
-      SignatureChecker.isValidSignatureNow(passive, hash, signature),
+      SignatureChecker.isValidSignatureNow(passive, hash, signature),  // how the signature is generated?
       "_safeCheckAgreement: invalid signature"
     );
     require(!_usedHashes.get(tokenId), "_safeCheckAgreement: already used");
@@ -129,7 +130,7 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
         keccak256(bytes(uri))
       )
     );
-    return _hashTypedDataV4(structHash);
+    return _hashTypedDataV4(structHash);  // bytes32
   }
 
   function _exists(uint256 tokenId) internal view virtual returns (bool) {

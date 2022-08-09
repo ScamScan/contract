@@ -5,27 +5,26 @@
 // will compile your contracts, add the Hardhat Runtime Environment's members to the
 // global scope, and execute the script.
 
+async function main() {
 
-// const hre = require("hardhat");
+    console.log("main function called.");
+    const ReputationToken = await ethers.getContractFactory("ReputationToken");
+    console.log("<<<< 1");
+    const reputationToken = await ReputationToken.deploy(
+        "RepuRepu",
+        "REPU",
+        "1.0"
+    );
+    console.log("<<<< 2");
 
-// async function main() {
-//   const currentTimestampInSeconds = Math.round(Date.now() / 1000);
-//   const ONE_YEAR_IN_SECS = 365 * 24 * 60 * 60;
-//   const unlockTime = currentTimestampInSeconds + ONE_YEAR_IN_SECS;
+    await reputationToken.deployed();
 
-//   const lockedAmount = hre.ethers.utils.parseEther("1");
+    console.log("Reputation Token deployed to: " + reputationToken.address);
+}
 
-//   const Lock = await hre.ethers.getContractFactory("Lock");
-//   const lock = await Lock.deploy(unlockTime, { value: lockedAmount });
-
-//   await lock.deployed();
-
-//   console.log("Lock with 1 ETH deployed to:", lock.address);
-// }
-
-// // We recommend this pattern to be able to use async/await everywhere
-// // and properly handle errors.
-// main().catch((error) => {
-//   console.error(error);
-//   process.exitCode = 1;
-// });
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
