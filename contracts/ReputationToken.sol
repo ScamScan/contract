@@ -16,7 +16,7 @@ bytes32 constant AGREEMENT_HASH =
     "Agreement(address active,address passive)"
 );
 
-struct ReputationToken {
+struct RepToken {
     int256 score;  // signed integer
     uint256 tokenId;
     uint256 relatedTransactionHash;  // report 하는 대상 트랜잭션 해시값 (in uint256 type)
@@ -24,7 +24,10 @@ struct ReputationToken {
     string reportTypeCode;  // report 하는 이유 유형
 }
 
-abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
+// abstract contract ReputationToken is EIP712, ERC165, IERC721Metadata, IERC4973 {
+// contract ReputationToken is IERC721Metadata, IERC4973 {
+contract ReputationToken is IERC721Metadata {
+
   using BitMaps for BitMaps.BitMap;
   
   // BitMap: mapping (uint256 => bool)
@@ -37,22 +40,39 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
   address private _maticBurnContract = 0x70bcA57F4579f58670aB2d18Ef16e02C17553C38;
   address payable private _payableMaticBurnContract = payable(_maticBurnContract);  // TODO refactor (from contract object?)
 
-  mapping(address => ReputationToken[]) private sentReputationTokens;
-  mapping(address => ReputationToken[]) private receivedReputationTokens;
+  mapping(address => RepToken[]) private sentReputationTokens;
+  mapping(address => RepToken[]) private receivedReputationTokens;
 
   mapping(uint256 => address) private _owners;  // tokenID to owner address
 
   mapping(address => uint256) private _balances;  // address to SBT balance
   mapping(address => int256) private _reputationScores;  // address to total reputation score
 
+  uint256 tempTokenId = 0;
+
+  // constructor(
+  //   string memory name_,
+  //   string memory symbol_,
+  //   string memory version_
+  // ) EIP712(name_, version_) {
+  //   _name = name_;
+  //   _symbol = symbol_;
+  // }
+
   constructor(
     string memory name_,
     string memory symbol_,
-    string memory version
-  ) EIP712(name_, version) {
+    string memory version_
+  ) {
     _name = name_;
     _symbol = symbol_;
   }
+
+  event Transfer(
+    address indexed from,
+    address indexed to,
+    uint256 indexed tokenId
+  );
 
   // function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
   //   return
@@ -69,13 +89,31 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
     return _symbol;
   }
 
-  function unequip(uint256 tokenId) public virtual override {
+  function tokenURI(uint256 tokenId) external view returns (string memory) {
+    revert("no tokenURI used.");
+  }
+
+  // function unequip(uint256 tokenId) public virtual override {
+  //   revert("Cannot unequip received Reputation Token.");
+  // }
+  function unequip(uint256 tokenId) public virtual {
     revert("Cannot unequip received Reputation Token.");
   }
 
-  function balanceOf(address holder) public view virtual override returns (uint256) {
+  // function balanceOf(address holder) public view virtual override returns (uint256) {
+  //   require(holder != address(0), "balanceOf: Zero address is not a valid holder");
+  //   return _balances[holder];
+  // }
+  function balanceOf(address holder) public view virtual returns (uint256) {
     require(holder != address(0), "balanceOf: Zero address is not a valid holder");
     return _balances[holder];
+  }
+
+  // function ownerOf(uint256 tokenId) public view virtual override returns (address) {
+  //   return _owners[tokenId];
+  // }
+  function ownerOf(uint256 tokenId) public view virtual returns (address) {
+    return _owners[tokenId];
   }
 
   function reputationScoreOf(address holder) public view virtual returns (int256) {  // Check: virtual?
@@ -83,21 +121,21 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
     return _reputationScores[holder];
   }
 
-  function sentTokensOf(address sender) public view returns (ReputationToken[] memory) {
+  function sentTokensOf(address sender) public view returns (RepToken[] memory) {
     require(sender != address(0), "sentTokensOf: Zero address is not a valid sender");
     return sentReputationTokens[sender];
   }
 
-  function receivedTokensOf(address recipient) public view returns (ReputationToken[] memory) {
+  function receivedTokensOf(address recipient) public view returns (RepToken[] memory) {
     require(recipient != address(0), "receivedTokensOf: Zero address is not a valid recipient");
     return sentReputationTokens[recipient];
   }
 
   // TODO check: 단위 맞는지 check
   function _getBurningAmount(int256 score) private pure returns (uint256) {
-    uint256 baseBurningFee = 10;
-    return uint256(score ** 2) + baseBurningFee;  // score^2 + baseBurningFee
-    // return 1;  // temporary
+    // uint256 baseBurningFee = 10;
+    // return uint256(score ** 2) + baseBurningFee;  // score^2 + baseBurningFee
+    return 1;  // temporary
   }
 
   function _burnFee(uint256 _amount) public payable {
@@ -111,61 +149,72 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
     return score >= min && score <= max;
   }
 
-  function give (
+  function give(
     address to,
+    string calldata uri,
     bytes calldata signature,
     int256 score,
     uint256 relatedTransactionHash,
-    uint256 transactionHash,
     string calldata reportTypeCode
   ) external virtual payable returns (uint256) {
     require(msg.sender != to, "give: cannot give from self.");
     require(_validateScoreMinMax(score), "give: invalid score value.");
 
-    uint256 tokenId = _safeCheckAgreement(msg.sender, to, signature);
+    // uint256 tokenId = _safeCheckAgreement(msg.sender, to, signature);
+    uint256 tokenId = tempTokenId;
+    tempTokenId += 1;  // temp: for deployment test
 
     uint256 burningAmount = _getBurningAmount(score);
     _burnFee(burningAmount);
-    _setUsedTransactionHash(transactionHash);
+    _setUsedTransactionHash(relatedTransactionHash);
 
-    _mint(msg.sender, to, score, tokenId, burningAmount, relatedTransactionHash, reportTypeCode);
+    bool succeed = _mint(msg.sender, to, score, tokenId, burningAmount, relatedTransactionHash, reportTypeCode);
+    require(succeed, "minting failed.");
     _usedTokenIdHashes.set(tokenId);
     return tokenId;
   }
+
+  // function take(
+  //   address from,
+  //   string calldata uri,
+  //   bytes calldata signature
+  // ) public virtual override returns (uint256) {
+  //   revert("Cannot take Reputation Token from others.");
+  // }
 
   function _setUsedTransactionHash(uint256 _transactionHash) private {
     require(!_usedTransactionHashes.get(_transactionHash), "_setUsedTransactionHash: already used transaction hash.");  // 이미 사용된 적 있는 transaction hash인지 검증
     _usedTransactionHashes.set(_transactionHash);
   }
 
-  function _safeCheckAgreement(
-    address active,
-    address passive,
-    bytes calldata signature
-  ) internal virtual returns (uint256) {
-    bytes32 hash = _getHash(active, passive);
-    uint256 tokenId = uint256(hash);
+  // function _safeCheckAgreement(
+  //   address active,
+  //   address passive,
+  //   bytes calldata signature
+  // ) internal virtual returns (uint256) {
+  //   bytes32 hash = _getHash(active, passive);
+  //   uint256 tokenId = uint256(hash);
 
-    require(
-      SignatureChecker.isValidSignatureNow(passive, hash, signature),
-      "_safeCheckAgreement: invalid signature"
-    );
-    require(!_usedTokenIdHashes.get(tokenId), "_safeCheckAgreement: already used tokenId hash.");
-    return tokenId;
-  }
+  //   require(
+  //     SignatureChecker.isValidSignatureNow(passive, hash, signature),
+  //     "_safeCheckAgreement: invalid signature"
+  //   );
+  //   require(!_usedTokenIdHashes.get(tokenId), "_safeCheckAgreement: already used tokenId hash.");
+  //   return tokenId;
+  // }
 
-  function _getHash(
-    address active,
-    address passive
-  ) internal view returns (bytes32) {
-    bytes32 structHash = keccak256(
-      abi.encode(
-        AGREEMENT_HASH,
-        active,
-        passive
-      ));
-    return _hashTypedDataV4(structHash);
-  }
+  // function _getHash(
+  //   address active,
+  //   address passive
+  // ) internal view returns (bytes32) {
+  //   bytes32 structHash = keccak256(
+  //     abi.encode(
+  //       AGREEMENT_HASH,
+  //       active,
+  //       passive
+  //     ));
+  //   return _hashTypedDataV4(structHash);
+  // }
 
   function _exists(uint256 tokenId) internal view virtual returns (bool) {
     return _owners[tokenId] != address(0);
@@ -187,7 +236,7 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
     _reputationScores[_to] += _score;
     _owners[_tokenId] = _to;
 
-    ReputationToken memory repToken = ReputationToken({  // Token instance
+    RepToken memory repToken = RepToken({  // Token instance
       score: _score,
       tokenId: _tokenId,
       amountOfBurntAsset: _burningAmount,
@@ -198,7 +247,7 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
     // Push token instance to token struct arrays.
     sentReputationTokens[_from].push(repToken);
     receivedReputationTokens[_to].push(repToken);
-    
+    emit Transfer(_from, _to, _tokenId);
     return true;
   }
 }

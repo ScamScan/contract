@@ -11,9 +11,9 @@ async function main() {
     const ReputationToken = await ethers.getContractFactory("ReputationToken");
     console.log("<<<< 1");
     const reputationToken = await ReputationToken.deploy(
-        "RepuRepu",
-        "REPU",
-        "1.0"
+        "ScamScan",
+        "SCAM",
+        "0.1.0"
     );
     console.log("<<<< 2");
 

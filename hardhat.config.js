@@ -6,11 +6,17 @@ module.exports = {
   networks: {
     ropsten: {
       url: "https://ropsten.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161",
-      accounts: [process.env.PRIVATE_KEY_ROPSTEN]
+      accounts: [process.env.PRIVATE_KEY_ROPSTEN],
+      // gas: 21000000,
+      // gasPrice: 80000000000
     },
-    evmos: {
+    evmos_testnet: {
       url: "https://eth.bd.evmos.dev:8545",
       accounts: [process.env.PRIVATE_KEY_EVMOS]
+    },
+    polygon_testnet: {
+      url: "https://rpc-mumbai.matic.today",
+      accounts: [process.env.PRIVATE_KEY_ROPSTEN],
     }
   }
 };
