@@ -13,7 +13,7 @@ import {ERC165} from "../library/src/ERC165.sol";
 
 bytes32 constant AGREEMENT_HASH =
   keccak256(
-    "Agreement(address active,address passive,string tokenURI)"
+    "Agreement(address active,address passive)"
 );
 
 struct ReputationToken {
@@ -28,7 +28,7 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
   using BitMaps for BitMaps.BitMap;
   
   // BitMap: mapping (uint256 => bool)
-  BitMaps.BitMap private _usedTokenIdHashes;  
+  BitMaps.BitMap private _usedTokenIdHashes;
   BitMaps.BitMap private _usedTransactionHashes;
 
   string private _name;
@@ -54,12 +54,12 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
     _symbol = symbol_;
   }
 
-  function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-    return
-      interfaceId == type(IERC721Metadata).interfaceId ||
-      interfaceId == type(IERC4973).interfaceId ||  // TODO check
-      super.supportsInterface(interfaceId);
-  }
+  // function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+  //   return
+  //     interfaceId == type(IERC721Metadata).interfaceId ||
+  //     interfaceId == type(IERC4973).interfaceId ||  // TODO check
+  //     super.supportsInterface(interfaceId);
+  // }
 
   function name() public view virtual override returns (string memory) {
     return _name;
@@ -68,11 +68,6 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
   function symbol() public view virtual override returns (string memory) {
     return _symbol;
   }
-
-  // function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
-  //   require(_exists(tokenId), "tokenURI: token doesn't exist");
-  //   return _tokenURIs[tokenId];
-  // }
 
   function unequip(uint256 tokenId) public virtual override {
     revert("Cannot unequip received Reputation Token.");
@@ -98,9 +93,11 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
     return sentReputationTokens[recipient];
   }
 
+  // TODO check: 단위 맞는지 check
   function _getBurningAmount(int256 score) private pure returns (uint256) {
     uint256 baseBurningFee = 10;
     return uint256(score ** 2) + baseBurningFee;  // score^2 + baseBurningFee
+    // return 1;  // temporary
   }
 
   function _burnFee(uint256 _amount) public payable {
@@ -116,7 +113,6 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
 
   function give (
     address to,
-    string calldata uri,
     bytes calldata signature,
     int256 score,
     uint256 relatedTransactionHash,
@@ -126,7 +122,7 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
     require(msg.sender != to, "give: cannot give from self.");
     require(_validateScoreMinMax(score), "give: invalid score value.");
 
-    uint256 tokenId = _safeCheckAgreement(msg.sender, to, uri, signature);
+    uint256 tokenId = _safeCheckAgreement(msg.sender, to, signature);
 
     uint256 burningAmount = _getBurningAmount(score);
     _burnFee(burningAmount);
@@ -145,10 +141,9 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
   function _safeCheckAgreement(
     address active,
     address passive,
-    string calldata uri,
     bytes calldata signature
   ) internal virtual returns (uint256) {
-    bytes32 hash = _getHash(active, passive, uri);
+    bytes32 hash = _getHash(active, passive);
     uint256 tokenId = uint256(hash);
 
     require(
@@ -161,17 +156,14 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
 
   function _getHash(
     address active,
-    address passive,
-    string calldata uri
+    address passive
   ) internal view returns (bytes32) {
     bytes32 structHash = keccak256(
       abi.encode(
         AGREEMENT_HASH,
         active,
-        passive,
-        keccak256(bytes(uri))
-      )
-    );
+        passive
+      ));
     return _hashTypedDataV4(structHash);
   }
 
