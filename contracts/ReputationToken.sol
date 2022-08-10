@@ -128,7 +128,7 @@ contract ReputationToken is IERC721Metadata {
 
   function receivedTokensOf(address recipient) public view returns (RepToken[] memory) {
     require(recipient != address(0), "receivedTokensOf: Zero address is not a valid recipient");
-    return sentReputationTokens[recipient];
+    return receivedReputationTokens[recipient];
   }
 
   // TODO check: 단위 맞는지 check
@@ -138,9 +138,9 @@ contract ReputationToken is IERC721Metadata {
     return 1;  // temporary
   }
 
-  function _burnFee(uint256 _amount) public payable {
-    bool succeed = _payableMaticBurnContract.send(_amount);  // TODO check: msg.sender의 자산을 소각하는지 확인
-    require(succeed, "Burn Failure. ");
+  function _burnFee() public payable {
+    _payableMaticBurnContract.transfer(msg.value);  // TODO check: msg.sender의 자산을 소각하는지 확인
+    // require(succeed, "Burn Failure. ");
   }
 
   function _validateScoreMinMax(int256 score) private pure returns (bool) {
@@ -166,7 +166,7 @@ contract ReputationToken is IERC721Metadata {
     tempTokenId += 1;  // temp: for deployment test
 
     uint256 burningAmount = _getBurningAmount(score);
-    _burnFee(burningAmount);
+    _burnFee();
     _setUsedTransactionHash(relatedTransactionHash);
 
     bool succeed = _mint(from, to, score, tokenId, burningAmount, relatedTransactionHash, reportTypeCode);
