@@ -27,7 +27,7 @@ struct RepToken {
 }
 
 // contract ReputationToken is IERC721Metadata, IERC4973 {
-contract ReputationToken is EIP712, ERC165 {
+contract ReputationToken is EIP712, ERC165, IERC721Metadata {
 
   using BitMaps for BitMaps.BitMap;
   
