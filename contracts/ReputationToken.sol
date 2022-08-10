@@ -9,12 +9,13 @@ import {IERC721Metadata} from "../library/src/interfaces/IERC721Metadata.sol";
 import {IERC4973} from "../library/src/interfaces/IERC4973.sol";
 
 import {ERC165} from "../library/src/ERC165.sol";
+import "../library/src/ERC4973.sol";
 
 
-bytes32 constant AGREEMENT_HASH =
-  keccak256(
-    "Agreement(address active,address passive)"
-);
+//bytes32 constant AGREEMENT_HASH =
+//  keccak256(
+//    "Agreement(address active,address passive)"
+//);
 
 struct RepToken {
     int256 score;  // signed integer
@@ -25,7 +26,7 @@ struct RepToken {
 }
 
 // contract ReputationToken is IERC721Metadata, IERC4973 {
-contract ReputationToken is IERC721Metadata, EIP712, ERC165 {
+contract ReputationToken is EIP712, ERC165 {
 
   using BitMaps for BitMaps.BitMap;
   
@@ -35,6 +36,8 @@ contract ReputationToken is IERC721Metadata, EIP712, ERC165 {
 
   string private _name;
   string private _symbol;
+  uint256 private _totalSupply;
+
   string private _burntAssetSymbol;  // 어떤 자산을 소각하여 점수를 매길 것인지 symbol 표시
   address private _maticBurnContract = 0x70bcA57F4579f58670aB2d18Ef16e02C17553C38;
   address payable private _payableMaticBurnContract = payable(_maticBurnContract);  // TODO refactor (from contract object?)
@@ -73,6 +76,40 @@ contract ReputationToken is IERC721Metadata, EIP712, ERC165 {
     uint256 indexed tokenId
   );
 
+  // sender, recipient의 주소와 토큰 uri의 keccak 해싱 결과를 uint256으로 형 변환한 것이 tokenId
+  function _safeCheckAgreement(
+    address active,  // msg.sender
+    address passive,  // to(give일 경우)
+    string calldata uri,
+    bytes calldata signature
+  ) internal virtual returns (uint256) {
+    bytes32 hash = _getHash(active, passive, uri);
+    uint256 tokenId = uint256(hash);
+
+//    require(
+//      SignatureChecker.isValidSignatureNow(passive, hash, signature),  // how the signature is generated?
+//      "_safeCheckAgreement: invalid signature"
+//    );
+    require(!_usedTokenIdHashes.get(tokenId), "_safeCheckAgreement: already used");
+    return tokenId;
+  }
+
+  function _getHash(
+    address active,
+    address passive,
+    string calldata uri
+  ) internal view returns (bytes32) {
+    bytes32 structHash = keccak256(
+      abi.encode(
+        AGREEMENT_HASH,
+        active,
+        passive
+//        keccak256(bytes(uri))
+      )
+    );
+    return _hashTypedDataV4(structHash);  // bytes32
+  }
+
   // function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
   //   return
   //     interfaceId == type(IERC721Metadata).interfaceId ||
@@ -80,16 +117,20 @@ contract ReputationToken is IERC721Metadata, EIP712, ERC165 {
   //     super.supportsInterface(interfaceId);
   // }
 
-  function name() public view virtual override returns (string memory) {
+  function name() public view returns (string memory) {
     return _name;
   }
 
-  function symbol() public view virtual override returns (string memory) {
+  function symbol() public view returns (string memory) {
     return _symbol;
   }
 
   function tokenURI(uint256 tokenId) external view returns (string memory) {
     revert("no tokenURI used.");
+  }
+
+  function totalSupply() public view returns (uint256) {
+    return _totalSupply;
   }
 
   // function unequip(uint256 tokenId) public virtual override {
@@ -137,8 +178,8 @@ contract ReputationToken is IERC721Metadata, EIP712, ERC165 {
     return 1;  // temporary
   }
 
-  function _burnFee(uint256 _amount) public payable {
-    bool succeed = _payableMaticBurnContract.send(_amount);  // TODO check: msg.sender의 자산을 소각하는지 확인
+  function _burnFee(uint256 value) public payable {
+    bool succeed = _payableMaticBurnContract.send(value);  // TODO check: msg.sender의 자산을 소각하는지 확인
     require(succeed, "Burn Failure. ");
   }
 
@@ -160,12 +201,12 @@ contract ReputationToken is IERC721Metadata, EIP712, ERC165 {
     require(msg.sender != to, "give: cannot give from self.");
     require(_validateScoreMinMax(score), "give: invalid score value.");
 
-    // uint256 tokenId = _safeCheckAgreement(msg.sender, to, signature);
-    uint256 tokenId = tempTokenId;
-    tempTokenId += 1;  // temp: for deployment test
+     uint256 tokenId = _safeCheckAgreement(msg.sender, to, uri, signature);
+//    uint256 tokenId = tempTokenId;
+//    tempTokenId += 1;  // temp: for deployment test
 
     uint256 burningAmount = _getBurningAmount(score);
-    _burnFee(burningAmount);
+    _burnFee(msg.value);
     _setUsedTransactionHash(relatedTransactionHash);
 
     bool succeed = _mint(from, to, score, tokenId, burningAmount, relatedTransactionHash, reportTypeCode);
@@ -187,7 +228,7 @@ contract ReputationToken is IERC721Metadata, EIP712, ERC165 {
     _usedTransactionHashes.set(_transactionHash);
   }
 
-  // function _safeCheckAgreement(
+  // function _safeCheck(
   //   address active,
   //   address passive,
   //   bytes calldata signature
@@ -233,6 +274,7 @@ contract ReputationToken is IERC721Metadata, EIP712, ERC165 {
     require(!_exists(_tokenId), "mint: tokenID exists");
 
     _balances[_to] += 1;
+    _totalSupply += 1;
     _reputationScores[_to] += _score;
     _owners[_tokenId] = _to;
 

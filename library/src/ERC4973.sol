@@ -12,7 +12,7 @@ import {IERC4973} from "./interfaces/IERC4973.sol";
 
 bytes32 constant AGREEMENT_HASH =
   keccak256(
-    "Agreement(address active,address passive,string tokenURI)"
+    "Agreement(address active,address passive,string uri)"
 );
 
 /// @notice Reference implementation of EIP-4973 tokens.
@@ -109,10 +109,10 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
     bytes32 hash = _getHash(active, passive, uri);
     uint256 tokenId = uint256(hash);
 
-    require(
-      SignatureChecker.isValidSignatureNow(passive, hash, signature),  // how the signature is generated?
-      "_safeCheckAgreement: invalid signature"
-    );
+//    require(
+//      SignatureChecker.isValidSignatureNow(passive, hash, signature),  // how the signature is generated?
+//      "_safeCheckAgreement: invalid signature"
+//    );
     require(!_usedHashes.get(tokenId), "_safeCheckAgreement: already used");
     return tokenId;
   }
