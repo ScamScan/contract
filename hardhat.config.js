@@ -16,9 +16,8 @@ module.exports = {
     },
     mumbai: {
       url: "https://rpc-mumbai.maticvigil.com/",
+      // url: "https://polygon-testnet-rpc.allthatnode.com:8545",
       accounts: [process.env.PRIVATE_KEY_ROPSTEN],
-      gas: 21000000,
-      gasPrice: 80000000000
     }
   }
 };

@@ -21,6 +21,7 @@ struct RepToken {
     uint256 tokenId;
     uint256 relatedTransactionHash;  // report 하는 대상 트랜잭션 해시값 (in uint256 type)
     uint256 amountOfBurntAsset;
+    uint256 blockTimestamp;
     string reportTypeCode;  // report 하는 이유 유형
 }
 
@@ -35,7 +36,7 @@ contract ReputationToken is IERC721Metadata, EIP712, ERC165 {
 
   string private _name;
   string private _symbol;
-  string private _burntAssetSymbol;  // 어떤 자산을 소각하여 점수를 매길 것인지 symbol 표시
+
   address private _maticBurnContract = 0x70bcA57F4579f58670aB2d18Ef16e02C17553C38;
   address payable private _payableMaticBurnContract = payable(_maticBurnContract);  // TODO refactor (from contract object?)
 
@@ -48,15 +49,6 @@ contract ReputationToken is IERC721Metadata, EIP712, ERC165 {
   mapping(address => int256) private _reputationScores;  // address to total reputation score
 
   uint256 tempTokenId = 0;
-
-  // constructor(
-  //   string memory name_,
-  //   string memory symbol_,
-  //   string memory version_
-  // ) EIP712(name_, version_) {
-  //   _name = name_;
-  //   _symbol = symbol_;
-  // }
 
   constructor(
     string memory name_,
@@ -131,14 +123,13 @@ contract ReputationToken is IERC721Metadata, EIP712, ERC165 {
   }
 
   // TODO check: 단위 맞는지 check
-  function _getBurningAmount(int256 score) private pure returns (uint256) {
-    // uint256 baseBurningFee = 10;
-    // return uint256(score ** 2) + baseBurningFee;  // score^2 + baseBurningFee
-    return 1;  // temporary
+  function getBurningAmount(int256 score) public pure returns (uint256) {
+    uint256 baseBurningFee = 10;
+    return uint256(score ** 2) + baseBurningFee;  // score^2 + baseBurningFee
   }
 
-  function _burnFee() public payable {
-    _payableMaticBurnContract.transfer(msg.value);  // TODO check: msg.sender의 자산을 소각하는지 확인
+  function _burnFee(uint _amount) public payable {
+    _payableMaticBurnContract.transfer(_amount);  // TODO check: msg.sender의 자산을 소각하는지 확인
     // require(succeed, "Burn Failure. ");
   }
 
@@ -148,7 +139,7 @@ contract ReputationToken is IERC721Metadata, EIP712, ERC165 {
     return score >= min && score <= max;
   }
 
-  function give(
+  function give (
     address from,
     address to,
     string calldata uri,
@@ -164,8 +155,8 @@ contract ReputationToken is IERC721Metadata, EIP712, ERC165 {
     uint256 tokenId = tempTokenId;
     tempTokenId += 1;  // temp: for deployment test
 
-    uint256 burningAmount = _getBurningAmount(score);
-    _burnFee();
+    uint256 burningAmount = getBurningAmount(score);
+    _burnFee(msg.value);
     _setUsedTransactionHash(relatedTransactionHash);
 
     bool succeed = _mint(from, to, score, tokenId, burningAmount, relatedTransactionHash, reportTypeCode);
@@ -182,8 +173,12 @@ contract ReputationToken is IERC721Metadata, EIP712, ERC165 {
   //   revert("Cannot take Reputation Token from others.");
   // }
 
+  function isUsedTransactionHash(uint256 _transactionHash) public view returns (bool) {
+    return _usedTransactionHashes.get(_transactionHash);
+  }
+
   function _setUsedTransactionHash(uint256 _transactionHash) private {
-    require(!_usedTransactionHashes.get(_transactionHash), "_setUsedTransactionHash: already used transaction hash.");  // 이미 사용된 적 있는 transaction hash인지 검증
+    require(!isUsedTransactionHash(_transactionHash), "_setUsedTransactionHash: already used transaction hash.");  // 이미 사용된 적 있는 transaction hash인지 검증
     _usedTransactionHashes.set(_transactionHash);
   }
 
@@ -241,6 +236,7 @@ contract ReputationToken is IERC721Metadata, EIP712, ERC165 {
       tokenId: _tokenId,
       amountOfBurntAsset: _burningAmount,
       reportTypeCode: _reportTypeCode,
+      blockTimestamp: block.timestamp,
       relatedTransactionHash: _relatedTransactionHash
     });
     
