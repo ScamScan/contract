@@ -11,11 +11,6 @@ import {IERC721Metadata} from "../library/src/interfaces/IERC721Metadata.sol";
 import {IERC4973} from "../library/src/interfaces/IERC4973.sol";
 
 
-// TODO 1: MATIC 등 토큰 소각 로직 개선 (transfer to the Zero Address?)
-// TODO 2: 이 tx hash가 이미 sbt 발급된 적 있는지 검증
-// 컨트랙트에서 merkle tree 등으로 관리하기? => is IN 조회
-// TODO 3: minMaxValidator to score: DONE
-
 bytes32 constant AGREEMENT_HASH =
   keccak256(
     "Agreement(address active,address passive,string tokenURI)"
@@ -26,18 +21,22 @@ struct ReputationToken {
     uint256 tokenId;
     uint256 amountOfBurntAsset;
     string reportTypeCode;  // report 하는 이유 유형
-    string relatedTransactionHash;  // report 하는 대상 트랜잭션 해시값
+    uint256 relatedTransactionHash;  // report 하는 대상 트랜잭션 해시값 (in uint256 type)
 }
 
 abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
   using BitMaps for BitMaps.BitMap;
 
-  BitMaps.BitMap internal _usedHashes;  // modified
+  BitMaps.BitMap private _usedTokenIdHashes;  // BitMap: mapping (uint256 => bool)
+  BitMaps.BitMap private _usedTransactionHashes;  // BitMap: mapping (uint256 => bool)
+
   string private _name;
   string private _symbol;
   string private _burntAssetSymbol;  // 어떤 자산을 소각하여 점수를 매길 것인지 symbol 표시
   address private _maticBurnContract = 0x70bcA57F4579f58670aB2d18Ef16e02C17553C38;
   address payable private _payableMaticBurnContract = payable(_maticBurnContract);  // TODO refactor (from contract object?)
+
+  uint256 private txId = 0x2be8085731961160aaf05dfe1e828732943e489acb5d8718f595e3a4d942af37;
 
   mapping(address => ReputationToken[]) private sentReputationTokens;
   mapping(address => ReputationToken[]) private receivedReputationTokens;
@@ -79,7 +78,7 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
   function unequip(uint256 tokenId) public virtual override {
     revert("Cannot unequip received Reputation Token.");
     // require(msg.sender == ownerOf(tokenId), "unequip: sender must be owner");
-    // _usedHashes.unset(tokenId);
+    // _usedTokenIdHashes.unset(tokenId);
     // _burn(tokenId);
   }
 
@@ -127,8 +126,9 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
     string calldata _uri,
     bytes calldata _signature,
     int256 _score,
-    string calldata _reportTypeCode,
-    string calldata _relatedTransactionHash
+    uint256 _relatedTransactionHash,
+    uint256 _transactionHash,
+    string calldata _reportTypeCode
   ) external virtual payable returns (uint256) {
     require(msg.sender != _to, "give: cannot give from self.");
     require(_validateScoreMinMax(_score), "give: invalid score value.");
@@ -137,9 +137,10 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
 
     uint256 burningAmount = _getBurningAmount(_score);
     _burnFee(burningAmount);
+    _setUsedTransactionHash(_transactionHash);
 
-    _mint(msg.sender, _to, _score, tokenId, burningAmount, _reportTypeCode, _relatedTransactionHash);
-    _usedHashes.set(tokenId);
+    _mint(msg.sender, _to, _score, tokenId, burningAmount, _relatedTransactionHash, _reportTypeCode);
+    _usedTokenIdHashes.set(tokenId);
     return tokenId;
   }
 
@@ -150,6 +151,11 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
   // ) external virtual returns (uint256) {
   //   revert("Cannot take Reputation Token from others.");
   // }
+
+  function _setUsedTransactionHash(uint256 _transactionHash) private {
+    require(!_usedTransactionHashes.get(_transactionHash), "_setUsedTransactionHash: already used transaction hash.");  // 이미 사용된 적 있는 transaction hash인지 검증
+    _usedTransactionHashes.set(_transactionHash);
+  }
 
   function _safeCheckAgreement(
     address active,
@@ -164,7 +170,7 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
       SignatureChecker.isValidSignatureNow(passive, hash, signature),
       "_safeCheckAgreement: invalid signature"
     );
-    require(!_usedHashes.get(tokenId), "_safeCheckAgreement: already used");
+    require(!_usedTokenIdHashes.get(tokenId), "_safeCheckAgreement: already used tokenId hash.");
     return tokenId;
   }
 
@@ -194,8 +200,8 @@ abstract contract ERC4973 is EIP712, ERC165, IERC721Metadata, IERC4973 {
     int256 _score,
     uint256 tokenId,
     uint256 burningAmount,
-    string memory _reportTypeCode,
-    string memory _relatedTransactionHash
+    uint256 _relatedTransactionHash,
+    string memory _reportTypeCode
   ) internal virtual returns (uint256) {
     
     require(!_exists(tokenId), "mint: tokenID exists");
