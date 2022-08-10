@@ -9,5 +9,5 @@
 ### Contract Address on Polygon Mumbai Testnet
 * [0x393746Ed031641F66F77ea05C85F745E16b3eBcD](https://polygonscan.com/address/0x393746Ed031641F66F77ea05C85F745E16b3eBcD)
 ### General
-* To reference from the implementation of [ERC4973](https://eips.ethereum.org/EIPS/eip-4973), create new SBT tokens implementations
-* FYI: From the specification of EIP4973, the methods of `unequip()` and `take()` are not implemented since it has no features, so that to be reverted if it is called.
+* When implementing the proposed standard of [ERC4973](https://eips.ethereum.org/EIPS/eip-4973), we referenced the sample implementations of the interface on the link.
+* FYI: From the specification of EIP4973, the methods of `unequip()` and `take()` are not implemented since it has no features, so that to be reverted if it is called by users.

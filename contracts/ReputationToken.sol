@@ -6,16 +6,12 @@ import {BitMaps} from "@openzeppelin/contracts/utils/structs/BitMaps.sol";
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 
 import {IERC721Metadata} from "../library/src/interfaces/IERC721Metadata.sol";
-import {IERC4973} from "../library/src/interfaces/IERC4973.sol";
-
 import {ERC165} from "../library/src/ERC165.sol";
-import "../library/src/ERC4973.sol";
 
 
-//bytes32 constant AGREEMENT_HASH =
-//  keccak256(
-//    "Agreement(address active,address passive)"
-//);
+bytes32 constant AGREEMENT_HASH = keccak256(
+  "Agreement(address active,address passive,string uri)"
+);
 
 struct RepToken {
     int256 score;  // signed integer
