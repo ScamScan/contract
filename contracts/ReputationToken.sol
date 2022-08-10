@@ -150,6 +150,7 @@ contract ReputationToken is IERC721Metadata {
   }
 
   function give(
+    address from,
     address to,
     string calldata uri,
     bytes calldata signature,
@@ -168,7 +169,7 @@ contract ReputationToken is IERC721Metadata {
     _burnFee(burningAmount);
     _setUsedTransactionHash(relatedTransactionHash);
 
-    bool succeed = _mint(msg.sender, to, score, tokenId, burningAmount, relatedTransactionHash, reportTypeCode);
+    bool succeed = _mint(from, to, score, tokenId, burningAmount, relatedTransactionHash, reportTypeCode);
     require(succeed, "minting failed.");
     _usedTokenIdHashes.set(tokenId);
     return tokenId;

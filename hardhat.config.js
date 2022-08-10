@@ -14,9 +14,11 @@ module.exports = {
       url: "https://eth.bd.evmos.dev:8545",
       accounts: [process.env.PRIVATE_KEY_EVMOS]
     },
-    polygon_testnet: {
-      url: "https://rpc-mumbai.matic.today",
+    mumbai: {
+      url: "https://rpc-mumbai.maticvigil.com/",
       accounts: [process.env.PRIVATE_KEY_ROPSTEN],
+      gas: 21000000,
+      gasPrice: 80000000000
     }
   }
 };
