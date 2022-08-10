@@ -24,9 +24,8 @@ struct RepToken {
     string reportTypeCode;  // report 하는 이유 유형
 }
 
-// abstract contract ReputationToken is EIP712, ERC165, IERC721Metadata, IERC4973 {
 // contract ReputationToken is IERC721Metadata, IERC4973 {
-contract ReputationToken is IERC721Metadata {
+contract ReputationToken is IERC721Metadata, EIP712, ERC165 {
 
   using BitMaps for BitMaps.BitMap;
   
@@ -63,7 +62,7 @@ contract ReputationToken is IERC721Metadata {
     string memory name_,
     string memory symbol_,
     string memory version_
-  ) {
+  ) EIP712(name_, version_) {
     _name = name_;
     _symbol = symbol_;
   }
