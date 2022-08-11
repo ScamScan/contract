@@ -2,8 +2,8 @@
 ## Introduction
 * Scamscan is a reputation platform using SBT with the quadratic burning mechanism. With Scamscan, you could track someone's reputation for interaction, which could prevent user's malicious actions.
 ### Features
-* Positive / Negative Reputation Points.
-* Verifying tx log.
+* Positive / Negative Reputation Points
+* Verifying tx log
 * Quadratic Burning
 ### Fee Mechanism
 * We would charge 10 MATIC as a constant fee to prevent malicious distortion of reputation with a low fee. We could express the total fee as below.
