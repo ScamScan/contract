@@ -11,6 +11,7 @@ import {ERC165} from "../library/src/ERC165.sol";
 
 bytes32 constant AGREEMENT_HASH = keccak256(
   "Agreement(address active,address passive,string uri)"
+  //"Agreement(address,address,string)"
 );
 
 struct RepToken {
@@ -74,10 +75,10 @@ contract ReputationToken is EIP712, ERC165, IERC721Metadata {
     bytes32 hash = _getHash(active, passive, uri);
     uint256 tokenId = uint256(hash);
 
-//    require(
-//      SignatureChecker.isValidSignatureNow(passive, hash, signature),  // how the signature is generated?
-//      "_safeCheckAgreement: invalid signature"
-//    );
+    require(
+      SignatureChecker.isValidSignatureNow(active, hash, signature),  // how the signature is generated?
+      "_safeCheckAgreement: invalid signature"
+    );
     require(!_usedTokenIdHashes.get(tokenId), "_safeCheckAgreement: already used");
     return tokenId;
   }
@@ -91,7 +92,8 @@ contract ReputationToken is EIP712, ERC165, IERC721Metadata {
       abi.encode(
         AGREEMENT_HASH,
         active,
-        passive
+        passive,
+    keccak256(bytes(uri))
 //        keccak256(bytes(uri))
       )
     );
@@ -187,7 +189,7 @@ contract ReputationToken is EIP712, ERC165, IERC721Metadata {
     require(msg.sender != to, "give: cannot give from self.");
     require(_validateScoreMinMax(score), "give: invalid score value.");
 
-     uint256 tokenId = _safeCheckAgreement(msg.sender, to, uri, signature);
+     uint256 tokenId = _safeCheckAgreement(from, to, uri, signature);
 //    uint256 tokenId = tempTokenId;
 //    tempTokenId += 1;  // temp: for deployment test
 
