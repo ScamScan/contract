@@ -1,6 +1,6 @@
 # ETHSeoul 2022 Submission: ScamScan
 ## Introduction
-* Track someone's reputation on the Ethereum blockchain
+* Scamscan is a reputation platform using SBT with the quadratic burning mechanism.
 ### Give: SBT minting + signing (amount, comment) + sending
 1. Verify whether the opponent is give-able (SBT minting + signing)
 2. If eligible => send SBT + MATIC (or other tokens) to be burnt (by signing Metamask wallet)
