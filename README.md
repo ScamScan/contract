@@ -15,7 +15,7 @@
 * Positive / Negative Reputation Points.
 * Verifying tx log.
 * Quadratic Burning
-###Fee Mechanism
+### Fee Mechanism
 * We would charge 10 MATIC as a constant fee to prevent malicious distortion of reputation with a low fee. We could express the total fee as below.
 * p = reputation quadratic burning
 * c = constant fee = 10 MATIC 
