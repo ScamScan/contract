@@ -1,6 +1,16 @@
 # ETHSeoul 2022 Submission: ScamScan
 ## Introduction
-* Track someone's reputation on the Ethereum blockchain
+* Scamscan is a reputation platform using SBT with the quadratic burning mechanism. With Scamscan, you could track someone's reputation for interaction, which could prevent user's malicious actions.
+### Features
+* Positive / Negative Reputation Points
+* Verifying tx log
+* Quadratic Burning
+### Fee Mechanism
+* We would charge 10 MATIC as a constant fee to prevent malicious distortion of reputation with a low fee. We could express the total fee as below.
+* p = reputation quadratic burning
+* c = constant fee = 10 MATIC 
+* r = gas fee
+* R = total fee = p^2 + c + r
 ### Give: SBT minting + signing (amount, comment) + sending
 1. Verify whether the opponent is give-able (SBT minting + signing)
 2. If eligible => send SBT + MATIC (or other tokens) to be burnt (by signing Metamask wallet)
