@@ -11,7 +11,7 @@
 ### General
 * When implementing the proposed standard of [ERC4973](https://eips.ethereum.org/EIPS/eip-4973), we referenced the sample implementations of the interface on the link.
 * FYI: From the specification of EIP4973, the methods of `unequip()` and `take()` are not implemented since it has no features, so that to be reverted if it is called by users.
-###Features
+### Features
 * Positive / Negative Reputation Points.
 * Verifying tx log.
 * Quadratic Burning
