@@ -11,7 +11,6 @@ import {ERC165} from "../library/src/ERC165.sol";
 
 bytes32 constant AGREEMENT_HASH = keccak256(
   "Agreement(address active,address passive,string uri)"
-  //"Agreement(address,address,string)"
 );
 
 struct RepToken {
@@ -23,7 +22,6 @@ struct RepToken {
     string reportTypeCode;  // report 하는 이유 유형
 }
 
-// contract ReputationToken is IERC721Metadata, IERC4973 {
 contract ReputationToken is EIP712, ERC165, IERC721Metadata {
 
   using BitMaps for BitMaps.BitMap;
@@ -65,10 +63,9 @@ contract ReputationToken is EIP712, ERC165, IERC721Metadata {
     uint256 indexed tokenId
   );
 
-  // sender, recipient의 주소와 토큰 uri의 keccak 해싱 결과를 uint256으로 형 변환한 것이 tokenId
   function _safeCheckAgreement(
-    address active,  // msg.sender
-    address passive,  // to(give일 경우)
+    address active,
+    address passive,
     string calldata uri,
     bytes calldata signature
   ) internal virtual returns (uint256) {
@@ -76,7 +73,7 @@ contract ReputationToken is EIP712, ERC165, IERC721Metadata {
     uint256 tokenId = uint256(hash);
 
     require(
-      SignatureChecker.isValidSignatureNow(active, hash, signature),  // how the signature is generated?
+      SignatureChecker.isValidSignatureNow(active, hash, signature),
       "_safeCheckAgreement: invalid signature"
     );
     require(!_usedTokenIdHashes.get(tokenId), "_safeCheckAgreement: already used");
@@ -89,23 +86,10 @@ contract ReputationToken is EIP712, ERC165, IERC721Metadata {
     string calldata uri
   ) internal view returns (bytes32) {
     bytes32 structHash = keccak256(
-      abi.encode(
-        AGREEMENT_HASH,
-        active,
-        passive,
-    keccak256(bytes(uri))
-//        keccak256(bytes(uri))
-      )
+      abi.encode(AGREEMENT_HASH, active, passive, keccak256(bytes(uri)))
     );
     return _hashTypedDataV4(structHash);  // bytes32
   }
-
-  // function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-  //   return
-  //     interfaceId == type(IERC721Metadata).interfaceId ||
-  //     interfaceId == type(IERC4973).interfaceId ||  // TODO check
-  //     super.supportsInterface(interfaceId);
-  // }
 
   function name() public view returns (string memory) {
     return _name;
@@ -123,25 +107,15 @@ contract ReputationToken is EIP712, ERC165, IERC721Metadata {
     return _totalSupply;
   }
 
-  // function unequip(uint256 tokenId) public virtual override {
-  //   revert("Cannot unequip received Reputation Token.");
-  // }
   function unequip(uint256 tokenId) public virtual {
     revert("Cannot unequip received Reputation Token.");
   }
 
-  // function balanceOf(address holder) public view virtual override returns (uint256) {
-  //   require(holder != address(0), "balanceOf: Zero address is not a valid holder");
-  //   return _balances[holder];
-  // }
   function balanceOf(address holder) public view virtual returns (uint256) {
     require(holder != address(0), "balanceOf: Zero address is not a valid holder");
     return _balances[holder];
   }
 
-  // function ownerOf(uint256 tokenId) public view virtual override returns (address) {
-  //   return _owners[tokenId];
-  // }
   function ownerOf(uint256 tokenId) public view virtual returns (address) {
     return _owners[tokenId];
   }
@@ -161,23 +135,22 @@ contract ReputationToken is EIP712, ERC165, IERC721Metadata {
     return receivedReputationTokens[recipient];
   }
 
-  // TODO check: 단위 맞는지 check
   function getBurningAmount(int256 score) public pure returns (uint256) {
     uint256 baseBurningFee = 10;
     return uint256(score ** 2) + baseBurningFee;  // score^2 + baseBurningFee
   }
 
   function _burnFee(uint _amount) public payable {
-    _payableMaticBurnContract.transfer(_amount);  // TODO check: msg.sender의 자산을 소각하는지 확인
+    _payableMaticBurnContract.transfer(_amount);
   }
 
   function _validateScoreMinMax(int256 score) private pure returns (bool) {
-    int256 min = -100;  // TODO: constructor로 빼기
+    int256 min = -100;
     int256 max = 100;
     return score >= min && score <= max;
   }
 
-  function give (
+  function give(
     address from,
     address to,
     string calldata uri,
@@ -190,8 +163,6 @@ contract ReputationToken is EIP712, ERC165, IERC721Metadata {
     require(_validateScoreMinMax(score), "give: invalid score value.");
 
      uint256 tokenId = _safeCheckAgreement(from, to, uri, signature);
-//    uint256 tokenId = tempTokenId;
-//    tempTokenId += 1;  // temp: for deployment test
 
     uint256 burningAmount = getBurningAmount(score);
     _burnFee(msg.value);
@@ -203,14 +174,6 @@ contract ReputationToken is EIP712, ERC165, IERC721Metadata {
     return tokenId;
   }
 
-  // function take(
-  //   address from,
-  //   string calldata uri,
-  //   bytes calldata signature
-  // ) public virtual override returns (uint256) {
-  //   revert("Cannot take Reputation Token from others.");
-  // }
-
   function isUsedTransactionHash(uint256 _transactionHash) public view returns (bool) {
     return _usedTransactionHashes.get(_transactionHash);
   }
@@ -219,35 +182,6 @@ contract ReputationToken is EIP712, ERC165, IERC721Metadata {
     require(!isUsedTransactionHash(_transactionHash), "_setUsedTransactionHash: already used transaction hash.");  // 이미 사용된 적 있는 transaction hash인지 검증
     _usedTransactionHashes.set(_transactionHash);
   }
-
-  // function _safeCheck(
-  //   address active,
-  //   address passive,
-  //   bytes calldata signature
-  // ) internal virtual returns (uint256) {
-  //   bytes32 hash = _getHash(active, passive);
-  //   uint256 tokenId = uint256(hash);
-
-  //   require(
-  //     SignatureChecker.isValidSignatureNow(passive, hash, signature),
-  //     "_safeCheckAgreement: invalid signature"
-  //   );
-  //   require(!_usedTokenIdHashes.get(tokenId), "_safeCheckAgreement: already used tokenId hash.");
-  //   return tokenId;
-  // }
-
-  // function _getHash(
-  //   address active,
-  //   address passive
-  // ) internal view returns (bytes32) {
-  //   bytes32 structHash = keccak256(
-  //     abi.encode(
-  //       AGREEMENT_HASH,
-  //       active,
-  //       passive
-  //     ));
-  //   return _hashTypedDataV4(structHash);
-  // }
 
   function _exists(uint256 tokenId) internal view virtual returns (bool) {
     return _owners[tokenId] != address(0);
