@@ -3,21 +3,20 @@ pragma solidity ^0.8.8;
 
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import {BitMaps} from "@openzeppelin/contracts/utils/structs/BitMaps.sol";
+
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
-
 import {IERC721Metadata} from "../library/src/interfaces/IERC721Metadata.sol";
-import {IERC4973} from "../library/src/interfaces/IERC4973.sol";
-
 import {ERC165} from "../library/src/ERC165.sol";
-import "../library/src/ERC4973.sol";
 
 
-//bytes32 constant AGREEMENT_HASH =
-//  keccak256(
-//    "Agreement(address active,address passive)"
-//);
+bytes32 constant AGREEMENT_HASH = keccak256(
+   "Agreement(address active,address passive,string uri)"
+);
+
 
 struct RepToken {
+    address from;
+    address to;
     int256 score;  // signed integer
     uint256 tokenId;
     uint256 relatedTransactionHash;  // report 하는 대상 트랜잭션 해시값 (in uint256 type)
@@ -26,22 +25,22 @@ struct RepToken {
     string reportTypeCode;  // report 하는 이유 유형
 }
 
-// contract ReputationToken is IERC721Metadata, IERC4973 {
-contract ReputationToken is EIP712, ERC165 {
+
+contract ReputationToken is EIP712, IERC721Metadata, ERC165 {
 
   using BitMaps for BitMaps.BitMap;
   
   // BitMap: mapping (uint256 => bool)
-  BitMaps.BitMap private _usedTokenIdHashes;
-  BitMaps.BitMap private _usedTransactionHashes;
+  BitMaps.BitMap private _usedTokenIdHashes;  // BitMap to store used Token Id
+  BitMaps.BitMap private _usedTransactionHashes;  // BitMap to store used Transaction hash
 
   string private _name;
   string private _symbol;
   uint256 private _totalSupply;
 
-  string private _burntAssetSymbol;  // 어떤 자산을 소각하여 점수를 매길 것인지 symbol 표시
+  string private _burntAssetSymbol;  // Asset symbol to burn for the minting
   address private _maticBurnContract = 0x70bcA57F4579f58670aB2d18Ef16e02C17553C38;
-  address payable private _payableMaticBurnContract = payable(_maticBurnContract);  // TODO refactor (from contract object?)
+  address payable private _payableMaticBurnContract = payable(_maticBurnContract);
 
   mapping(address => RepToken[]) private sentReputationTokens;
   mapping(address => RepToken[]) private receivedReputationTokens;
@@ -51,7 +50,7 @@ contract ReputationToken is EIP712, ERC165 {
   mapping(address => uint256) private _balances;  // address to SBT balance
   mapping(address => int256) private _reputationScores;  // address to total reputation score
 
-  uint256 tempTokenId = 0;
+  // uint256 tempTokenId = 0;
 
   constructor(
     string memory name_,
@@ -68,20 +67,19 @@ contract ReputationToken is EIP712, ERC165 {
     uint256 indexed tokenId
   );
 
-  // sender, recipient의 주소와 토큰 uri의 keccak 해싱 결과를 uint256으로 형 변환한 것이 tokenId
   function _safeCheckAgreement(
     address active,  // msg.sender
-    address passive,  // to(give일 경우)
+    address passive,  // to
     string calldata uri,
     bytes calldata signature
   ) internal virtual returns (uint256) {
     bytes32 hash = _getHash(active, passive, uri);
     uint256 tokenId = uint256(hash);
 
-//    require(
-//      SignatureChecker.isValidSignatureNow(passive, hash, signature),  // how the signature is generated?
-//      "_safeCheckAgreement: invalid signature"
-//    );
+   require(
+     SignatureChecker.isValidSignatureNow(passive, hash, signature),
+     "_safeCheckAgreement: invalid signature"
+   );
     require(!_usedTokenIdHashes.get(tokenId), "_safeCheckAgreement: already used");
     return tokenId;
   }
@@ -95,19 +93,12 @@ contract ReputationToken is EIP712, ERC165 {
       abi.encode(
         AGREEMENT_HASH,
         active,
-        passive
-//        keccak256(bytes(uri))
+        passive,
+        keccak256(bytes(uri))
       )
     );
     return _hashTypedDataV4(structHash);  // bytes32
   }
-
-  // function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-  //   return
-  //     interfaceId == type(IERC721Metadata).interfaceId ||
-  //     interfaceId == type(IERC4973).interfaceId ||  // TODO check
-  //     super.supportsInterface(interfaceId);
-  // }
 
   function name() public view returns (string memory) {
     return _name;
@@ -117,33 +108,23 @@ contract ReputationToken is EIP712, ERC165 {
     return _symbol;
   }
 
-  function tokenURI(uint256 tokenId) external view returns (string memory) {
-    revert("no tokenURI used.");
+  function tokenURI(uint256 tokenId) external pure returns (string memory) {
+	    revert("no tokenURI used.");
   }
 
   function totalSupply() public view returns (uint256) {
     return _totalSupply;
   }
 
-  // function unequip(uint256 tokenId) public virtual override {
-  //   revert("Cannot unequip received Reputation Token.");
-  // }
   function unequip(uint256 tokenId) public virtual {
     revert("Cannot unequip received Reputation Token.");
   }
 
-  // function balanceOf(address holder) public view virtual override returns (uint256) {
-  //   require(holder != address(0), "balanceOf: Zero address is not a valid holder");
-  //   return _balances[holder];
-  // }
   function balanceOf(address holder) public view virtual returns (uint256) {
     require(holder != address(0), "balanceOf: Zero address is not a valid holder");
     return _balances[holder];
   }
 
-  // function ownerOf(uint256 tokenId) public view virtual override returns (address) {
-  //   return _owners[tokenId];
-  // }
   function ownerOf(uint256 tokenId) public view virtual returns (address) {
     return _owners[tokenId];
   }
@@ -163,7 +144,6 @@ contract ReputationToken is EIP712, ERC165 {
     return receivedReputationTokens[recipient];
   }
 
-  // TODO check: 단위 맞는지 check
   function getBurningAmount(int256 score) public pure returns (uint256) {
     uint256 baseBurningFee = 10;
     return uint256(score ** 2) + baseBurningFee;  // score^2 + baseBurningFee
@@ -190,10 +170,10 @@ contract ReputationToken is EIP712, ERC165 {
   ) external virtual payable returns (uint256) {
     require(msg.sender != to, "give: cannot give from self.");
     require(_validateScoreMinMax(score), "give: invalid score value.");
-
-     uint256 tokenId = _safeCheckAgreement(msg.sender, to, uri, signature);
-//    uint256 tokenId = tempTokenId;
-//    tempTokenId += 1;  // temp: for deployment test
+    
+    uint256 tokenId = _safeCheckAgreement(msg.sender, to, uri, signature);
+    // uint256 tokenId = tempTokenId;
+    // tempTokenId += 1;  // temp: for deployment test
 
     uint256 burningAmount = getBurningAmount(score);
     _burnFee(msg.value);
@@ -205,14 +185,6 @@ contract ReputationToken is EIP712, ERC165 {
     return tokenId;
   }
 
-  // function take(
-  //   address from,
-  //   string calldata uri,
-  //   bytes calldata signature
-  // ) public virtual override returns (uint256) {
-  //   revert("Cannot take Reputation Token from others.");
-  // }
-
   function isUsedTransactionHash(uint256 _transactionHash) public view returns (bool) {
     return _usedTransactionHashes.get(_transactionHash);
   }
@@ -221,35 +193,6 @@ contract ReputationToken is EIP712, ERC165 {
     require(!isUsedTransactionHash(_transactionHash), "_setUsedTransactionHash: already used transaction hash.");  // 이미 사용된 적 있는 transaction hash인지 검증
     _usedTransactionHashes.set(_transactionHash);
   }
-
-  // function _safeCheck(
-  //   address active,
-  //   address passive,
-  //   bytes calldata signature
-  // ) internal virtual returns (uint256) {
-  //   bytes32 hash = _getHash(active, passive);
-  //   uint256 tokenId = uint256(hash);
-
-  //   require(
-  //     SignatureChecker.isValidSignatureNow(passive, hash, signature),
-  //     "_safeCheckAgreement: invalid signature"
-  //   );
-  //   require(!_usedTokenIdHashes.get(tokenId), "_safeCheckAgreement: already used tokenId hash.");
-  //   return tokenId;
-  // }
-
-  // function _getHash(
-  //   address active,
-  //   address passive
-  // ) internal view returns (bytes32) {
-  //   bytes32 structHash = keccak256(
-  //     abi.encode(
-  //       AGREEMENT_HASH,
-  //       active,
-  //       passive
-  //     ));
-  //   return _hashTypedDataV4(structHash);
-  // }
 
   function _exists(uint256 tokenId) internal view virtual returns (bool) {
     return _owners[tokenId] != address(0);
@@ -273,6 +216,8 @@ contract ReputationToken is EIP712, ERC165 {
     _owners[_tokenId] = _to;
 
     RepToken memory repToken = RepToken({  // Token instance
+      from: _from,
+      to: _to,
       score: _score,
       tokenId: _tokenId,
       amountOfBurntAsset: _burningAmount,
