@@ -18,10 +18,10 @@ struct RepToken {
     address to;
     int256 score;  // signed integer
     uint256 tokenId;
-    uint256 relatedTransactionHash;  // report 하는 대상 트랜잭션 해시값 (in uint256 type)
+    uint256 relatedTransactionHash;  // transaction hash to report
     uint256 amountOfBurntAsset;
     uint256 blockTimestamp;
-    string reportTypeCode;  // report 하는 이유 유형
+    string reportTypeCode;  // reason type for the report (ex. scammer)
 }
 
 
@@ -49,8 +49,6 @@ contract ReputationToken is EIP712, IERC721Metadata, ERC165 {
 
   mapping(address => uint256) private _balances;  // address to SBT balance
   mapping(address => int256) private _reputationScores;  // address to total reputation score
-
-  // uint256 tempTokenId = 0;
 
   constructor(
     string memory name_,
@@ -123,7 +121,7 @@ contract ReputationToken is EIP712, IERC721Metadata, ERC165 {
     return _owners[tokenId];
   }
 
-  function reputationScoreOf(address holder) public view virtual returns (int256) {  // Check: virtual?
+  function reputationScoreOf(address holder) public view virtual returns (int256) {
     require(holder != address(0), "reputationScoreOf: Zero address is not a valid holder");
     return _reputationScores[holder];
   }
@@ -164,7 +162,7 @@ contract ReputationToken is EIP712, IERC721Metadata, ERC165 {
   ) external virtual payable returns (uint256) {
     require(msg.sender != to, "give: cannot give from self.");
     require(_validateScoreMinMax(score), "give: invalid score value.");
-    
+
     uint256 tokenId = _safeCheckAgreement(from, to, uri, signature);
 
     uint256 burningAmount = getBurningAmount(score);
@@ -182,7 +180,7 @@ contract ReputationToken is EIP712, IERC721Metadata, ERC165 {
   }
 
   function _setUsedTransactionHash(uint256 _transactionHash) private {
-    require(!isUsedTransactionHash(_transactionHash), "_setUsedTransactionHash: already used transaction hash.");  // 이미 사용된 적 있는 transaction hash인지 검증
+    require(!isUsedTransactionHash(_transactionHash), "_setUsedTransactionHash: already used transaction hash.");  // verify if the transaction hash has been already used.
     _usedTransactionHashes.set(_transactionHash);
   }
 
