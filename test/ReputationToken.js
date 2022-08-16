@@ -36,28 +36,14 @@ describe("Reputation Token contract", function () {
 
   it("can give ReputationToken to other address", async function () {
     const {reputationToken, owner, address1, address2} = await deployTokenFixture();
-
-    // given
-    // const AGREEMENT_HASH = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(
-    //     "Agreement(address active,address passive)"));
-    // const EIP712_DOMAIN_TYPEHASH = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract,bytes32 salt)"));
-    // const NAME = ethers.utils.keccak256(ethers.utils.formatBytes32String("SBT"));
-    // const AMOUNT = ethers.utils.keccak256(ethers.utils.formatBytes32String("0.1"));
-    // const HARDHAT_LOCAL_CHAIN_ID = 31337;
-    // const SBT_TOKEN_ADDRESS = reputationToken.address;
     const SALT = "0xf2d857f4a3edcb9b78b4d503bfe733db1e3f6cdc2b7971ee739626c97e86a558";
-    //
-    // const structHash = ethers.utils.defaultAbiCoder.encode([AGREEMENT_HASH], [EIP712_DOMAIN_TYPEHASH], [NAME], [AMOUNT], [HARDHAT_LOCAL_CHAIN_ID], [SBT_TOKEN_ADDRESS], [SALT]);
-    // const keccakedStructHash = ethers.utils.keccak256(structHash);
-    //
-    // console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", keccakedStructHash)
 
     const domain = [
       { name: "name", type: "string" },
       { name: "version", type: "string" },
       { name: "chainId", type: "uint256" },
       { name: "verifyingContract", type: "address" },
-      { name: "salt", type: "bytes32" },
+      { name: "salt", type: "bytes32" }
     ];
 
     const AGREEMENT = [
@@ -65,9 +51,9 @@ describe("Reputation Token contract", function () {
     ]
 
     const domainData = {
-      chainId: 31337,
       name: "ScamScan",
       version: "1.0",
+      chainId: 31337,
       verifyingContract: reputationToken.address,
       salt: SALT
     };
@@ -79,10 +65,10 @@ describe("Reputation Token contract", function () {
     const data = JSON.stringify({
       types: {
         EIP712Domain: domain,
-        AGREEMENT
+        Agreement: AGREEMENT
       },
       domain: domainData,
-      primaryType: "AGREEMENT",
+      primaryType: "Agreement",
       message: message
     });
 
