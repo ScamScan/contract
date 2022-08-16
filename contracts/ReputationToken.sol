@@ -10,14 +10,8 @@ import {ERC165} from "../library/src/ERC165.sol";
 
 
 bytes32 constant AGREEMENT_HASH = keccak256(
-<<<<<<< HEAD
-   "Agreement(address active,address passive,string uri)"
-);
-
-=======
   "Agreement(address active,address passive,string uri)"
 );
->>>>>>> 4329682b
 
 struct RepToken {
     address from;
@@ -30,12 +24,9 @@ struct RepToken {
     string reportTypeCode;  // report 하는 이유 유형
 }
 
-<<<<<<< HEAD
 
 contract ReputationToken is EIP712, IERC721Metadata, ERC165 {
-=======
-contract ReputationToken is EIP712, ERC165, IERC721Metadata {
->>>>>>> 4329682b
+
 
   using BitMaps for BitMaps.BitMap;
   
@@ -77,30 +68,17 @@ contract ReputationToken is EIP712, ERC165, IERC721Metadata {
   );
 
   function _safeCheckAgreement(
-<<<<<<< HEAD
     address active,  // msg.sender
     address passive,  // to
-=======
-    address active,
-    address passive,
->>>>>>> 4329682b
     string calldata uri,
     bytes calldata signature
   ) internal virtual returns (uint256) {
     bytes32 hash = _getHash(active, passive, uri);
     uint256 tokenId = uint256(hash);
-
-<<<<<<< HEAD
-   require(
-     SignatureChecker.isValidSignatureNow(passive, hash, signature),
-     "_safeCheckAgreement: invalid signature"
-   );
-=======
     require(
-      SignatureChecker.isValidSignatureNow(active, hash, signature),
+      SignatureChecker.isValidSignatureNow(passive, hash, signature),
       "_safeCheckAgreement: invalid signature"
-    );
->>>>>>> 4329682b
+      );
     require(!_usedTokenIdHashes.get(tokenId), "_safeCheckAgreement: already used");
     return tokenId;
   }
@@ -111,16 +89,7 @@ contract ReputationToken is EIP712, ERC165, IERC721Metadata {
     string calldata uri
   ) internal view returns (bytes32) {
     bytes32 structHash = keccak256(
-<<<<<<< HEAD
-      abi.encode(
-        AGREEMENT_HASH,
-        active,
-        passive,
-        keccak256(bytes(uri))
-      )
-=======
       abi.encode(AGREEMENT_HASH, active, passive, keccak256(bytes(uri)))
->>>>>>> 4329682b
     );
     return _hashTypedDataV4(structHash);  // bytes32
   }
@@ -195,15 +164,8 @@ contract ReputationToken is EIP712, ERC165, IERC721Metadata {
   ) external virtual payable returns (uint256) {
     require(msg.sender != to, "give: cannot give from self.");
     require(_validateScoreMinMax(score), "give: invalid score value.");
-<<<<<<< HEAD
     
-    uint256 tokenId = _safeCheckAgreement(msg.sender, to, uri, signature);
-    // uint256 tokenId = tempTokenId;
-    // tempTokenId += 1;  // temp: for deployment test
-=======
-
-     uint256 tokenId = _safeCheckAgreement(from, to, uri, signature);
->>>>>>> 4329682b
+    uint256 tokenId = _safeCheckAgreement(from, to, uri, signature);
 
     uint256 burningAmount = getBurningAmount(score);
     _burnFee(msg.value);
