@@ -17,7 +17,7 @@
 3. Check: Search by specific addresses then check SBT list and score sum
 4. MyPage: Check the list of received & sent SBT tokens (which requires additional signature)
 ### Contract Address on Polygon Mumbai Testnet
-* [0x393746Ed031641F66F77ea05C85F745E16b3eBcD](https://polygonscan.com/address/0x393746Ed031641F66F77ea05C85F745E16b3eBcD)
+* [0x393746Ed031641F66F77ea05C85F745E16b3eBcD](https://mumbai.polygonscan.com/address/0x393746Ed031641F66F77ea05C85F745E16b3eBcD)
 ### General
 * When implementing the proposed standard of [ERC4973](https://eips.ethereum.org/EIPS/eip-4973), we referenced the sample implementations of the interface on the link.
 * FYI: From the specification of EIP4973, the methods of `unequip()` and `take()` are not implemented since it has no features, so that to be reverted if it is called by users.
